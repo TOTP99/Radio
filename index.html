@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070b" />
+  <title>收音机 · Radio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="brand">
+    <span>TP制作🐈📻</span>
+    <span class="clock" id="clock">--:--:--</span>
+  </header>
+
+  <main class="player-card">
+    <div class="visual" id="visual">
+      <div class="live-badge" id="liveBadge" hidden>LIVE</div>
+      <div class="now-title" id="nowTitle">选择电台或播客</div>
+      <div class="now-sub" id="nowSub">CBC · Virgin · 粤语 · Podcast</div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap" hidden>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-filled" id="progressFilled"></div>
+      </div>
+      <div class="time-row">
+        <span id="curTime">0:00</span>
+        <span id="durTime">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="playBtn" class="play" title="播放/暂停">▶</button>
+      <button id="stopBtn" title="停止">⏹</button>
+    </div>
+  </main>
+
+  <section class="section">
+    <h2>直播电台</h2>
+    <div class="station-grid" id="stationGrid"></div>
+  </section>
+
+  <section class="section">
+    <h2>热门播客</h2>
+    <p class="hint">美加最常听的两档：The Daily（纽约时报）· Front Burner（CBC）</p>
+    <div class="podcast-tabs">
+      <button class="tab active" data-pod="daily">The Daily</button>
+      <button class="tab" data-pod="frontburner">Front Burner</button>
+    </div>
+    <div class="episode-list" id="episodeList">
+      <div class="loading">加载节目单…</div>
+    </div>
+  </section>
+
+  <audio id="audio" playsinline></audio>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
