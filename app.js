@@ -1,5 +1,5 @@
 /*
- * 收音机 · 3 直播台 + The Daily（默认收起）
+ * 收音机 · 3 直播台 + The Daily（默认收起，RSS 带 CORS 回退）
  */
 const STATIONS = [
   {
@@ -179,10 +179,21 @@ STATIONS.forEach((st) => {
 
 const parseRss = (xmlText) => {
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  const parseErr = doc.querySelector('parsererror');
+  if (parseErr) return [];
   return [...doc.querySelectorAll('item')].slice(0, 12).map((item) => {
     const title = item.querySelector('title')?.textContent?.trim() || '无标题';
     const enclosure = item.querySelector('enclosure');
-    const url = enclosure?.getAttribute('url') || '';
+    let url = enclosure?.getAttribute('url') || '';
+    if (!url) {
+      const media = item.querySelector('media\\:content, content');
+      url = media?.getAttribute('url') || '';
+    }
+    if (!url) {
+      const link = item.querySelector('link');
+      const href = link?.textContent?.trim() || link?.getAttribute('href') || '';
+      if (/\.(mp3|m4a|aac)(\?|$)/i.test(href)) url = href;
+    }
     const dur = item.querySelector('itunes\\:duration, duration')?.textContent || '';
     const pub = item.querySelector('pubDate')?.textContent || '';
     let date = '';
@@ -193,33 +204,76 @@ const parseRss = (xmlText) => {
   }).filter((x) => x.url);
 };
 
-const loadDaily = async () => {
-  if (podLoaded) return;
+/* 直连失败时走公共 CORS 代理（观音新开标签时偶发被拦） */
+const fetchFeedText = async (feedUrl) => {
+  const candidates = [
+    feedUrl,
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(feedUrl),
+    'https://corsproxy.io/?' + encodeURIComponent(feedUrl)
+  ];
+  let lastErr = null;
+  for (const src of candidates) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(src, {
+        signal: ctrl.signal,
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-cache'
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (!text || text.length < 40) throw new Error('empty');
+      if (!text.includes('<item') && !text.includes('<rss')) throw new Error('not rss');
+      return text;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('feed failed');
+};
+
+const renderEpisodes = (eps) => {
+  episodeList.innerHTML = '';
+  const last = loadState();
+  eps.forEach((ep) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'episode';
+    btn.dataset.url = ep.url;
+    if (last.type === 'podcast' && last.url === ep.url) btn.classList.add('active');
+    btn.innerHTML =
+      `<div class="ep-title">${ep.title}</div>` +
+      `<div class="ep-meta">${ep.date}${ep.dur ? ' · ' + ep.dur : ''}</div>`;
+    btn.addEventListener('click', () => playEpisode(ep));
+    episodeList.appendChild(btn);
+  });
+  podLoaded = true;
+};
+
+const loadDaily = async (force) => {
+  if (podLoaded && !force) return;
   episodeList.innerHTML = '<div class="loading">加载节目单…</div>';
   try {
-    const res = await fetch(DAILY.feed);
-    if (!res.ok) throw new Error('feed ' + res.status);
-    const eps = parseRss(await res.text());
+    const text = await fetchFeedText(DAILY.feed);
+    const eps = parseRss(text);
     if (!eps.length) {
       episodeList.innerHTML = '<div class="error">暂无节目</div>';
       return;
     }
-    episodeList.innerHTML = '';
-    const last = loadState();
-    eps.forEach((ep) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'episode';
-      btn.dataset.url = ep.url;
-      if (last.type === 'podcast' && last.url === ep.url) btn.classList.add('active');
-      btn.innerHTML = `<div class="ep-title">${ep.title}</div><div class="ep-meta">${ep.date}${ep.dur ? ' · ' + ep.dur : ''}</div>`;
-      btn.addEventListener('click', () => playEpisode(ep));
-      episodeList.appendChild(btn);
-    });
-    podLoaded = true;
+    renderEpisodes(eps);
   } catch (e) {
-    console.warn(e);
-    episodeList.innerHTML = '<div class="error">节目单加载失败（可能跨域），请稍后重试</div>';
+    console.warn('Daily feed error', e);
+    podLoaded = false;
+    episodeList.innerHTML =
+      '<div class="error">节目单加载失败，请点此重试</div>';
+    const errEl = episodeList.querySelector('.error');
+    if (errEl) {
+      errEl.style.cursor = 'pointer';
+      errEl.addEventListener('click', () => loadDaily(true));
+    }
   }
 };
 
@@ -228,7 +282,7 @@ const setPodOpen = (open) => {
   podBody.hidden = !open;
   podToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   saveState({ podOpen: open });
-  if (open) loadDaily();
+  if (open) loadDaily(false);
 };
 
 podToggle.addEventListener('click', () => setPodOpen(!podOpen));
@@ -282,6 +336,7 @@ setInterval(tick, 1000);
 
 (() => {
   const last = loadState();
+  // 默认收起；若用户曾展开则恢复展开并拉节目单
   setPodOpen(!!last.podOpen);
 
   if (last.type === 'live' && last.id) {
@@ -293,6 +348,6 @@ setInterval(tick, 1000);
     }
   } else if (last.type === 'podcast' && last.title) {
     nowTitle.textContent = last.title;
-    nowSub.textContent = DAILY.name + ' · 点击展开选择或继续';
+    nowSub.textContent = DAILY.name + ' · 展开后可继续收听';
   }
 })();
