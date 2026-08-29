@@ -32,6 +32,26 @@ const DAILY = {
 
 const STORAGE_KEY = 'radio_state_v2';
 
+/* 按键短促音效（Web Audio，无需外部文件） */
+let audioCtx = null;
+const playClickSound = () => {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(420, audioCtx.currentTime + 0.06);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.09);
+  } catch {}
+};
+
 const audio = document.getElementById('audio');
 const playBtn = document.getElementById('playBtn');
 const stopBtn = document.getElementById('stopBtn');
@@ -310,8 +330,12 @@ progressBar.addEventListener('click', (e) => {
   audio.currentTime = ratio * audio.duration;
 });
 
-playBtn.addEventListener('click', togglePlay);
+playBtn.addEventListener('click', () => {
+  playClickSound();
+  togglePlay();
+});
 stopBtn.addEventListener('click', () => {
+  playClickSound();
   stopAll();
   nowTitle.textContent = '已停止';
   nowSub.textContent = '选择电台或播客';
@@ -322,6 +346,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
     e.preventDefault();
+    playClickSound();
     togglePlay();
   }
 });
