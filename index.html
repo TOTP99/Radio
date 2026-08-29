@@ -14,10 +14,10 @@
   </header>
 
   <main class="player-card">
-    <div class="visual" id="visual">
+    <div class="visual">
       <div class="live-badge" id="liveBadge" hidden>LIVE</div>
       <div class="now-title" id="nowTitle">选择电台或播客</div>
-      <div class="now-sub" id="nowSub">CBC · Virgin · 粤语 · Podcast</div>
+      <div class="now-sub" id="nowSub">CBC · Virgin · 粤语 · The Daily</div>
     </div>
 
     <div class="progress-wrap" id="progressWrap" hidden>
@@ -31,8 +31,8 @@
     </div>
 
     <div class="controls">
-      <button id="playBtn" class="play" title="播放/暂停">▶</button>
-      <button id="stopBtn" title="停止">⏹</button>
+      <button type="button" id="playBtn" class="play" title="播放/暂停" aria-label="播放/暂停">▶</button>
+      <button type="button" id="stopBtn" title="停止" aria-label="停止">⏹</button>
     </div>
   </main>
 
@@ -41,15 +41,19 @@
     <div class="station-grid" id="stationGrid"></div>
   </section>
 
-  <section class="section">
-    <h2>热门播客</h2>
-    <p class="hint">美加最常听的两档：The Daily（纽约时报）· Front Burner（CBC）</p>
-    <div class="podcast-tabs">
-      <button class="tab active" data-pod="daily">The Daily</button>
-      <button class="tab" data-pod="frontburner">Front Burner</button>
-    </div>
-    <div class="episode-list" id="episodeList">
-      <div class="loading">加载节目单…</div>
+  <section class="section podcast-section">
+    <button type="button" class="pod-toggle" id="podToggle" aria-expanded="false">
+      <span class="pod-toggle-left">
+        <span class="pod-label">热门播客</span>
+        <span class="pod-name">The Daily · 纽约时报</span>
+      </span>
+      <span class="pod-chevron" id="podChevron">▾</span>
+    </button>
+    <div class="pod-body" id="podBody" hidden>
+      <p class="hint">美加最常听新闻播客 · 最新 12 期</p>
+      <div class="episode-list" id="episodeList">
+        <div class="loading">加载节目单…</div>
+      </div>
     </div>
   </section>
 

@@ -1,6 +1,5 @@
 /*
- * 独立收音机
- * 3 直播台 + 2 热门播客（The Daily / Front Burner）
+ * 收音机 · 3 直播台 + The Daily（默认收起）
  */
 const STATIONS = [
   {
@@ -26,18 +25,12 @@ const STATIONS = [
   }
 ];
 
-const PODCASTS = {
-  daily: {
-    name: 'The Daily',
-    feed: 'https://feeds.simplecast.com/54nAGcIl',
-    note: '纽约时报 · 美加最听新闻播客'
-  },
-  frontburner: {
-    name: 'Front Burner',
-    feed: 'https://www.cbc.ca/podcasting/includes/frontburner.xml',
-    note: 'CBC · 加拿大日更深度新闻'
-  }
+const DAILY = {
+  name: 'The Daily',
+  feed: 'https://feeds.simplecast.com/54nAGcIl'
 };
+
+const STORAGE_KEY = 'radio_state_v2';
 
 const audio = document.getElementById('audio');
 const playBtn = document.getElementById('playBtn');
@@ -53,17 +46,36 @@ const durTime = document.getElementById('durTime');
 const stationGrid = document.getElementById('stationGrid');
 const episodeList = document.getElementById('episodeList');
 const clockEl = document.getElementById('clock');
+const podToggle = document.getElementById('podToggle');
+const podBody = document.getElementById('podBody');
 
 let hls = null;
-let mode = null; // 'live' | 'podcast'
+let mode = null;
 let activeId = null;
 let seeking = false;
+let podLoaded = false;
+let podOpen = false;
 
-const fmt = sec => {
+const fmt = (sec) => {
   if (!isFinite(sec) || sec < 0) return '0:00';
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return m + ':' + String(s).padStart(2, '0');
+};
+
+const loadState = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const saveState = (patch) => {
+  try {
+    const cur = loadState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...cur, ...patch }));
+  } catch {}
 };
 
 const destroyHls = () => {
@@ -82,7 +94,7 @@ const stopAll = () => {
   liveBadge.hidden = true;
   progressWrap.hidden = true;
   progressFilled.style.width = '0';
-  document.querySelectorAll('.station, .episode').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.station, .episode').forEach((el) => el.classList.remove('active'));
   mode = null;
   activeId = null;
 };
@@ -126,34 +138,27 @@ const playStation = async (st) => {
   nowSub.textContent = st.meta;
   liveBadge.hidden = false;
   progressWrap.hidden = true;
-  document.querySelectorAll('.station').forEach(el => {
+  document.querySelectorAll('.station').forEach((el) => {
     el.classList.toggle('active', el.dataset.id === st.id);
   });
-
   if (st.type === 'hls') await playHls(st.url);
   else await playDirect(st.url);
-
-  try {
-    localStorage.setItem('radio_last', JSON.stringify({ type: 'live', id: st.id }));
-  } catch {}
+  saveState({ type: 'live', id: st.id });
 };
 
-const playEpisode = async (ep, podKey) => {
+const playEpisode = async (ep) => {
   stopAll();
   mode = 'podcast';
   activeId = ep.url;
   nowTitle.textContent = ep.title;
-  nowSub.textContent = PODCASTS[podKey].name;
+  nowSub.textContent = DAILY.name;
   liveBadge.hidden = true;
   progressWrap.hidden = false;
-  document.querySelectorAll('.episode').forEach(el => {
+  document.querySelectorAll('.episode').forEach((el) => {
     el.classList.toggle('active', el.dataset.url === ep.url);
   });
-
   await playDirect(ep.url);
-  try {
-    localStorage.setItem('radio_last', JSON.stringify({ type: 'podcast', pod: podKey, url: ep.url, title: ep.title }));
-  } catch {}
+  saveState({ type: 'podcast', url: ep.url, title: ep.title });
 };
 
 const togglePlay = () => {
@@ -162,8 +167,7 @@ const togglePlay = () => {
   else audio.pause();
 };
 
-// ---- UI: stations ----
-STATIONS.forEach(st => {
+STATIONS.forEach((st) => {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'station';
@@ -173,11 +177,9 @@ STATIONS.forEach(st => {
   stationGrid.appendChild(btn);
 });
 
-// ---- Podcasts ----
 const parseRss = (xmlText) => {
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-  const items = [...doc.querySelectorAll('item')].slice(0, 12);
-  return items.map(item => {
+  return [...doc.querySelectorAll('item')].slice(0, 12).map((item) => {
     const title = item.querySelector('title')?.textContent?.trim() || '无标题';
     const enclosure = item.querySelector('enclosure');
     const url = enclosure?.getAttribute('url') || '';
@@ -188,66 +190,66 @@ const parseRss = (xmlText) => {
       date = new Date(pub).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
     } catch {}
     return { title, url, dur, date };
-  }).filter(x => x.url);
+  }).filter((x) => x.url);
 };
 
-const loadPodcast = async (key) => {
+const loadDaily = async () => {
+  if (podLoaded) return;
   episodeList.innerHTML = '<div class="loading">加载节目单…</div>';
-  const pod = PODCASTS[key];
   try {
-    const res = await fetch(pod.feed);
+    const res = await fetch(DAILY.feed);
     if (!res.ok) throw new Error('feed ' + res.status);
-    const text = await res.text();
-    const eps = parseRss(text);
+    const eps = parseRss(await res.text());
     if (!eps.length) {
       episodeList.innerHTML = '<div class="error">暂无节目</div>';
       return;
     }
     episodeList.innerHTML = '';
-    eps.forEach(ep => {
+    const last = loadState();
+    eps.forEach((ep) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'episode';
       btn.dataset.url = ep.url;
+      if (last.type === 'podcast' && last.url === ep.url) btn.classList.add('active');
       btn.innerHTML = `<div class="ep-title">${ep.title}</div><div class="ep-meta">${ep.date}${ep.dur ? ' · ' + ep.dur : ''}</div>`;
-      btn.addEventListener('click', () => playEpisode(ep, key));
+      btn.addEventListener('click', () => playEpisode(ep));
       episodeList.appendChild(btn);
     });
+    podLoaded = true;
   } catch (e) {
     console.warn(e);
     episodeList.innerHTML = '<div class="error">节目单加载失败（可能跨域），请稍后重试</div>';
   }
 };
 
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    loadPodcast(tab.dataset.pod);
-  });
-});
+const setPodOpen = (open) => {
+  podOpen = open;
+  podBody.hidden = !open;
+  podToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  saveState({ podOpen: open });
+  if (open) loadDaily();
+};
 
-// ---- Audio events ----
+podToggle.addEventListener('click', () => setPodOpen(!podOpen));
+
 audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
 audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
 audio.addEventListener('timeupdate', () => {
   if (seeking || mode !== 'podcast' || !audio.duration) return;
-  const pct = (audio.currentTime / audio.duration) * 100;
-  progressFilled.style.width = pct + '%';
+  progressFilled.style.width = ((audio.currentTime / audio.duration) * 100) + '%';
   curTime.textContent = fmt(audio.currentTime);
   durTime.textContent = fmt(audio.duration);
 });
 audio.addEventListener('loadedmetadata', () => {
-  if (mode === 'podcast') {
-    durTime.textContent = fmt(audio.duration);
-  }
+  if (mode === 'podcast') durTime.textContent = fmt(audio.duration);
 });
 audio.addEventListener('error', () => {
   if (mode) nowSub.textContent = '播放出错，请换台重试';
   playBtn.textContent = '▶';
 });
 
-progressBar.addEventListener('click', e => {
+progressBar.addEventListener('click', (e) => {
   if (mode !== 'podcast' || !audio.duration) return;
   const rect = progressBar.getBoundingClientRect();
   const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
@@ -259,18 +261,18 @@ stopBtn.addEventListener('click', () => {
   stopAll();
   nowTitle.textContent = '已停止';
   nowSub.textContent = '选择电台或播客';
+  saveState({ type: null });
 });
 
-document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
     e.preventDefault();
     togglePlay();
   }
 });
 
-// ---- Clock ----
-const pad = n => String(n).padStart(2, '0');
+const pad = (n) => String(n).padStart(2, '0');
 const tick = () => {
   const d = new Date();
   clockEl.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -278,19 +280,19 @@ const tick = () => {
 tick();
 setInterval(tick, 1000);
 
-// ---- Init ----
-loadPodcast('daily');
+(() => {
+  const last = loadState();
+  setPodOpen(!!last.podOpen);
 
-// 恢复上次
-try {
-  const last = JSON.parse(localStorage.getItem('radio_last') || 'null');
-  if (last?.type === 'live') {
-    const st = STATIONS.find(s => s.id === last.id);
+  if (last.type === 'live' && last.id) {
+    const st = STATIONS.find((s) => s.id === last.id);
     if (st) {
-      // 不自动播，只高亮；避免打扰
       document.querySelector(`.station[data-id="${st.id}"]`)?.classList.add('active');
       nowTitle.textContent = st.name;
-      nowSub.textContent = '点击上方按钮继续收听';
+      nowSub.textContent = '点击播放继续收听';
     }
+  } else if (last.type === 'podcast' && last.title) {
+    nowTitle.textContent = last.title;
+    nowSub.textContent = DAILY.name + ' · 点击展开选择或继续';
   }
-} catch {}
+})();
