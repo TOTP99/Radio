@@ -70,9 +70,8 @@ const podToggle = document.getElementById('podToggle');
 const podBody = document.getElementById('podBody');
 
 let hls = null;
-let mode = null;
-let activeId = null;
-let seeking = false;
+let mode = null;       // 'live' | 'podcast' | null
+let activeId = null;   // station id or episode url
 let podLoaded = false;
 let podOpen = false;
 
@@ -310,7 +309,7 @@ podToggle.addEventListener('click', () => setPodOpen(!podOpen));
 audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
 audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
 audio.addEventListener('timeupdate', () => {
-  if (seeking || mode !== 'podcast' || !audio.duration) return;
+  if (mode !== 'podcast' || !audio.duration) return;
   progressFilled.style.width = ((audio.currentTime / audio.duration) * 100) + '%';
   curTime.textContent = fmt(audio.currentTime);
   durTime.textContent = fmt(audio.duration);

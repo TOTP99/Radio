@@ -3,8 +3,8 @@
   --surface: #0a0e14;
   --card: #0e141c;
   --card-hover: #141c28;
-  --border: rgba(218, 175, 80, 0.35);
-  --border-strong: rgba(232, 197, 106, 0.55);
+  --border: rgba(218, 175, 80, 0.28);
+  --border-strong: rgba(232, 197, 106, 0.5);
   --text: #e8eef6;
   --muted: #7a8fa8;
   --accent: #5ba8d9;
@@ -43,12 +43,63 @@ body {
   color: var(--gold-bright);
 }
 
+/* 播放卡片 + 四角装饰 */
 .player-card {
+  position: relative;
   background: linear-gradient(165deg, var(--surface) 0%, #070b10 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 22px 16px 16px;
   margin-bottom: 20px;
+  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.06);
+  overflow: hidden;
+}
+
+/* 四角 L 形装饰 */
+.player-card::before,
+.player-card::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+.player-card::before {
+  top: 5px;
+  left: 5px;
+  border-top: 1.5px solid var(--gold-bright);
+  border-left: 1.5px solid var(--gold-bright);
+  opacity: 0.7;
+}
+.player-card::after {
+  top: 5px;
+  right: 5px;
+  border-top: 1.5px solid var(--gold-bright);
+  border-right: 1.5px solid var(--gold-bright);
+  opacity: 0.7;
+}
+
+.player-card .corner-bl,
+.player-card .corner-br {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.7;
+}
+.player-card .corner-bl {
+  bottom: 5px;
+  left: 5px;
+  border-bottom: 1.5px solid var(--gold-bright);
+  border-left: 1.5px solid var(--gold-bright);
+}
+.player-card .corner-br {
+  bottom: 5px;
+  right: 5px;
+  border-bottom: 1.5px solid var(--gold-bright);
+  border-right: 1.5px solid var(--gold-bright);
 }
 
 .visual {
@@ -88,8 +139,8 @@ body {
 
 .progress-wrap { margin-bottom: 12px; }
 .progress-bar {
-  height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  height: 4px;
+  background: rgba(255, 255, 255, 0.07);
   border-radius: 2px;
   cursor: pointer;
   position: relative;
@@ -103,8 +154,9 @@ body {
 .progress-filled {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, #3a7aaa, var(--accent));
+  background: linear-gradient(90deg, #3a7aaa, var(--accent), var(--gold-bright));
   border-radius: 2px;
+  box-shadow: 0 0 8px rgba(91, 168, 217, 0.35);
 }
 .time-row {
   display: flex;
@@ -185,7 +237,8 @@ body {
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.04);
 }
 .station:hover {
   background: var(--card-hover);
@@ -193,7 +246,9 @@ body {
 }
 .station.active {
   border-color: var(--gold-bright);
-  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(232, 197, 106, 0.18),
+    0 0 16px -4px rgba(232, 197, 106, 0.25);
 }
 .station .name {
   font-size: 0.92rem;
@@ -220,7 +275,8 @@ body {
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.04);
 }
 .pod-toggle:hover {
   background: var(--card-hover);
@@ -230,6 +286,9 @@ body {
   border-color: var(--border-strong);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+  box-shadow:
+    0 0 0 1px rgba(232, 197, 106, 0.12),
+    0 0 12px -4px rgba(232, 197, 106, 0.15);
 }
 .pod-toggle-left {
   display: flex;
@@ -285,6 +344,7 @@ body {
   font-size: 0.78rem;
   line-height: 1.35;
   transition: border-color 0.15s, background 0.15s;
+  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.04);
 }
 .episode:hover {
   background: var(--card-hover);
@@ -292,6 +352,7 @@ body {
 }
 .episode.active {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(91, 168, 217, 0.15);
 }
 .episode .ep-title {
   font-weight: 500;
