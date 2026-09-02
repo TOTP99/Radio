@@ -176,7 +176,17 @@ const playEpisode=async ep=>{
   document.querySelectorAll('.episode').forEach(el=>el.classList.toggle('active',el.dataset.url===ep.url));
   await playDirect(ep.url);saveState({type:'podcast',url:ep.url,title:ep.title});
 };
-const togglePlay=()=>{if(!audio.src&&!hls)return;if(audio.paused)audio.play().catch(()=>{});else audio.pause();};
+const togglePlay=()=>{
+  if(!audio.src&&!hls)return;
+  if(audio.paused){
+    audio.play().catch(err=>{
+      console.warn('播放失败:',err);
+      setSignal('off');
+    });
+  }else{
+    audio.pause();
+  }
+};
 
 /* 预设列表 + 筛选 */
 const renderStations=()=>{
@@ -254,8 +264,6 @@ window.addEventListener('touchmove',onDialMove,{passive:true});
 window.addEventListener('mouseup',onDialUp);
 window.addEventListener('touchend',onDialUp);
 
-  nowSub.textContent='已切换到 '+next+' 刻度';
-});
 
 /* 播客 RSS */
 const parseRss=xml=>{
