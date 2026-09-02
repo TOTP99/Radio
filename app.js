@@ -56,6 +56,9 @@ const playTuneStatic=(d=0.4)=>{try{
 const audio=document.getElementById('audio');
 const playBtn=document.getElementById('playBtn');
 const stopBtn=document.getElementById('stopBtn');
+const prevBtn=document.getElementById('prevBtn');
+const nextBtn=document.getElementById('nextBtn');
+const bandBtn=document.getElementById('bandBtn');
 const nowTitle=document.getElementById('nowTitle');
 const nowSub=document.getElementById('nowSub');
 const liveBadge=document.getElementById('liveBadge');
@@ -250,9 +253,7 @@ window.addEventListener('mousemove',onDialMove);
 window.addEventListener('touchmove',onDialMove,{passive:true});
 window.addEventListener('mouseup',onDialUp);
 window.addEventListener('touchend',onDialUp);
-dialTrack.addEventListener('dblclick',()=>{
-  const next=dialBand==='FM'?'AM':'FM';setDialScale(next);
-  setDialUI(next==='FM'?98:1000,next,{animate:false});
+
   nowSub.textContent='已切换到 '+next+' 刻度';
 });
 
@@ -325,6 +326,49 @@ progressBar.addEventListener('click',e=>{
   const r=progressBar.getBoundingClientRect();
   audio.currentTime=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width))*audio.duration;
 });
+
+/* 当前波段内按频率排序的预设 */
+const sortedPresets = (band) =>
+  STATIONS.filter((s) => s.band === band).sort((a, b) => a.freq - b.freq);
+
+const stepPreset = (dir) => {
+  playClickSound();
+  const list = sortedPresets(dialBand);
+  if (!list.length) return;
+  let idx = list.findIndex((s) => s.id === activeId);
+  if (idx < 0) {
+    // 按当前频率找最近
+    let best = 0, bestD = Infinity;
+    list.forEach((s, i) => {
+      const d = Math.abs(s.freq - currentFreq);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    idx = best;
+  }
+  const next = list[(idx + dir + list.length) % list.length];
+  playStation(next);
+};
+
+const toggleBand = () => {
+  playClickSound();
+  const next = dialBand === 'FM' ? 'AM' : 'FM';
+  setDialScale(next);
+  const list = sortedPresets(next);
+  if (list.length) {
+    // 切到该波段第一个预设频率位置（不自动播放，只动指针）
+    setDialUI(list[0].freq, next, { animate: true });
+    nowSub.textContent = next + ' 刻度 · 共 ' + list.length + ' 个预设 · 点 ⏭️ 或列表收听';
+  } else {
+    setDialUI(next === 'FM' ? 98 : 1000, next, { animate: true });
+    nowSub.textContent = '已切换到 ' + next + ' 刻度';
+  }
+  setSignal('off');
+};
+
+prevBtn.addEventListener('click', () => stepPreset(-1));
+nextBtn.addEventListener('click', () => stepPreset(1));
+bandBtn.addEventListener('click', toggleBand);
+
 playBtn.addEventListener('click',()=>{playClickSound();togglePlay();});
 stopBtn.addEventListener('click',()=>{playClickSound();stopAll();nowTitle.textContent='已停止';nowSub.textContent='选择电台或播客';saveState({type:null});});
 document.addEventListener('keydown',e=>{
