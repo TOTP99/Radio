@@ -16,10 +16,33 @@
   <main class="player-card">
     <span class="corner-bl" aria-hidden="true"></span>
     <span class="corner-br" aria-hidden="true"></span>
+
+    <div class="radio-face">
+      <div class="freq-row">
+        <span class="band" id="bandLabel">FM</span>
+        <div class="freq-display" id="freqDisplay">--.-</div>
+        <div class="signal" id="signalBars" title="信号" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+
+      <div class="dial" id="dial">
+        <div class="dial-track" id="dialTrack">
+          <div class="dial-marks" id="dialMarks"></div>
+          <div class="dial-needle" id="dialNeedle"></div>
+        </div>
+        <div class="dial-labels" id="dialLabels">
+          <span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>
+        </div>
+      </div>
+
+      <div class="tune-hint">拖动刻度调台 · 靠近预设会自动锁台</div>
+    </div>
+
     <div class="visual">
       <div class="live-badge" id="liveBadge" hidden>LIVE</div>
       <div class="now-title" id="nowTitle">选择电台或播客</div>
-      <div class="now-sub" id="nowSub">CBC · Virgin · 粤语 · The Daily</div>
+      <div class="now-sub" id="nowSub">6 预设 · 旋钮调谐 · The Daily</div>
     </div>
 
     <div class="progress-wrap" id="progressWrap" hidden>
@@ -39,7 +62,7 @@
   </main>
 
   <section class="section">
-    <h2>直播电台</h2>
+    <h2>预设电台</h2>
     <div class="station-grid" id="stationGrid"></div>
   </section>
 
