@@ -8,11 +8,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- 顶部品牌栏 + 实时时钟（app.js 里的 tick()） -->
   <header class="brand">
     <span>TP制作🐈📻</span>
     <span class="clock" id="clock">--:--:--</span>
   </header>
 
+  <!-- 主播放卡片：表盘 + 当前播放信息 + 播客进度条 + 控制按钮 -->
   <main class="player-card">
     <span class="corner-bl" aria-hidden="true"></span>
     <span class="corner-br" aria-hidden="true"></span>
@@ -31,7 +33,7 @@
           <span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>
         </div>
       </div>
-      <div class="tune-hint">拖动刻度调台 · ⏮️⏭️切预设 · 🔘切 FM/AM</div>
+      <div class="tune-hint">拖动刻度调台 · ⏮️⏭️切预设 · 🔄切 FM/AM</div>
     </div>
     <div class="visual">
       <div class="live-badge" id="liveBadge" hidden>LIVE</div>
@@ -47,24 +49,25 @@
         <span id="durTime">0:00</span>
       </div>
     </div>
+    <!-- 单行四按钮：🔄切FM/AM · ▶️播放/暂停（合并了原来的⏹停止）· ⏮️⏭️切预设 -->
     <div class="controls">
-      <button type="button" id="prevBtn" title="上一预设" aria-label="上一预设">⏮️</button>
+      <button type="button" id="bandBtn" title="FM/AM 切换" aria-label="FM/AM 切换">🔄</button>
       <button type="button" id="playBtn" class="play" title="播放/暂停" aria-label="播放/暂停">▶</button>
-      <button type="button" id="stopBtn" title="停止" aria-label="停止">⏹</button>
+      <button type="button" id="prevBtn" title="上一预设" aria-label="上一预设">⏮️</button>
       <button type="button" id="nextBtn" title="下一预设" aria-label="下一预设">⏭️</button>
-      <button type="button" id="bandBtn" title="FM/AM 切换" aria-label="FM/AM 切换">🔘</button>
     </div>
   </main>
 
+  <!-- 直播电台：默认收起（见 app.js 里 setStOpen 的初始化逻辑），展开后显示分类筛选 + 预设网格 -->
   <section class="section station-section">
-    <button type="button" class="pod-toggle" id="stToggle" aria-expanded="true">
+    <button type="button" class="pod-toggle" id="stToggle" aria-expanded="false">
       <span class="pod-toggle-left">
         <span class="pod-label">直播电台</span>
         <span class="pod-name" id="stToggleName">预设 · 全部</span>
       </span>
       <span class="pod-chevron">▾</span>
     </button>
-    <div class="pod-body st-body" id="stBody">
+    <div class="pod-body st-body" id="stBody" hidden>
       <div class="filter-row" id="filterRow">
         <button type="button" class="chip active" data-filter="all">全部</button>
         <button type="button" class="chip" data-filter="FM">FM</button>
@@ -77,6 +80,7 @@
     </div>
   </section>
 
+  <!-- 播客：The Daily，首次展开时才通过 RSS 拉取节目单（app.js 里的 loadDaily） -->
   <section class="section podcast-section">
     <button type="button" class="pod-toggle" id="podToggle" aria-expanded="false">
       <span class="pod-toggle-left">
