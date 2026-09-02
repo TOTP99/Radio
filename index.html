@@ -14,30 +14,12 @@
   </header>
 
   <main class="player-card">
-    <span class="corner-bl" aria-hidden="true"></span>
-    <span class="corner-br" aria-hidden="true"></span>
-    <div class="radio-face">
-      <div class="freq-row">
-        <span class="band" id="bandLabel">FM</span>
-        <div class="freq-display" id="freqDisplay">--.-</div>
-        <div class="signal" id="signalBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-      </div>
-      <div class="dial">
-        <div class="dial-track" id="dialTrack">
-          <div class="dial-marks" id="dialMarks"></div>
-          <div class="dial-needle" id="dialNeedle"></div>
-        </div>
-        <div class="dial-labels" id="dialLabels">
-          <span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>
-        </div>
-      </div>
-      <div class="tune-hint">拖动刻度调台 · 双击切换 FM/AM · 靠近预设自动锁台</div>
-    </div>
     <div class="visual">
       <div class="live-badge" id="liveBadge" hidden>LIVE</div>
       <div class="now-title" id="nowTitle">选择电台或播客</div>
-      <div class="now-sub" id="nowSub">预设筛选 · 旋钮调谐 · The Daily</div>
+      <div class="now-sub" id="nowSub">CBC · Virgin · 粤语 · The Daily</div>
     </div>
+
     <div class="progress-wrap" id="progressWrap" hidden>
       <div class="progress-bar" id="progressBar">
         <div class="progress-filled" id="progressFilled"></div>
@@ -47,31 +29,16 @@
         <span id="durTime">0:00</span>
       </div>
     </div>
+
     <div class="controls">
       <button type="button" id="playBtn" class="play" title="播放/暂停" aria-label="播放/暂停">▶</button>
       <button type="button" id="stopBtn" title="停止" aria-label="停止">⏹</button>
     </div>
   </main>
 
-  <section class="section station-section">
-    <button type="button" class="pod-toggle" id="stToggle" aria-expanded="true">
-      <span class="pod-toggle-left">
-        <span class="pod-label">直播电台</span>
-        <span class="pod-name" id="stToggleName">预设 · 全部</span>
-      </span>
-      <span class="pod-chevron">▾</span>
-    </button>
-    <div class="pod-body st-body" id="stBody">
-      <div class="filter-row" id="filterRow">
-        <button type="button" class="chip active" data-filter="all">全部</button>
-        <button type="button" class="chip" data-filter="FM">FM</button>
-        <button type="button" class="chip" data-filter="AM">AM</button>
-        <button type="button" class="chip" data-filter="news">新闻</button>
-        <button type="button" class="chip" data-filter="music">音乐</button>
-        <button type="button" class="chip" data-filter="zh">中文/多元</button>
-      </div>
-      <div class="station-grid" id="stationGrid"></div>
-    </div>
+  <section class="section">
+    <h2>直播电台</h2>
+    <div class="station-grid" id="stationGrid"></div>
   </section>
 
   <section class="section podcast-section">
@@ -80,7 +47,7 @@
         <span class="pod-label">热门播客</span>
         <span class="pod-name">The Daily · 纽约时报</span>
       </span>
-      <span class="pod-chevron">▾</span>
+      <span class="pod-chevron" id="podChevron">▾</span>
     </button>
     <div class="pod-body" id="podBody" hidden>
       <p class="hint">美加最常听新闻播客 · 最新 12 期</p>
@@ -91,6 +58,7 @@
   </section>
 
   <audio id="audio" playsinline></audio>
+
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
   <script src="app.js"></script>
 </body>
