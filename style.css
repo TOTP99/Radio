@@ -143,9 +143,9 @@ body {
   display: flex; justify-content: space-between; font-size: 0.66rem;
   color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
+.controls { display: flex; justify-content: center; gap: 14px; }
 .controls button {
-  min-width: 44px; min-height: 44px; border: none; outline: none; border-radius: 50%;
+  min-width: 48px; min-height: 48px; border: none; outline: none; border-radius: 50%;
   background: transparent; color: var(--text); font-size: 1.25rem; cursor: pointer;
   transition: color 0.15s, transform 0.1s, box-shadow 0.15s, filter 0.15s;
 }
