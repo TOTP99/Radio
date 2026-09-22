@@ -148,7 +148,9 @@ body {
   min-width: 44px; min-height: 44px; border: none; outline: none; border-radius: 50%;
   background: transparent; color: var(--text); font-size: 1.25rem; cursor: pointer;
   transition: color 0.15s, transform 0.1s, box-shadow 0.15s, filter 0.15s;
+  display: inline-flex; align-items: center; justify-content: center;
 }
+.controls button svg { width: 1em; height: 1em; display: block; }
 .controls button:hover { color: var(--gold-bright); }
 .controls .play { color: var(--gold); font-size: 1.45rem; min-width: 56px; min-height: 56px; }
 .controls button:active {

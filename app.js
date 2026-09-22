@@ -83,6 +83,8 @@ const playTuneStatic=(d=0.4)=>{try{
 }catch{}};
 
 /* ========== 3. DOM 引用 ========== */
+const ICON_PLAY='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const ICON_PAUSE='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
 const audio=document.getElementById('audio');
 const playBtn=document.getElementById('playBtn');
 const prevBtn=document.getElementById('prevBtn');
@@ -179,7 +181,7 @@ const startStaticLoop=()=>{stopStaticLoop();try{
 const stopAll=()=>{
   if(tuneTimer){clearTimeout(tuneTimer);tuneTimer=null;}
   stopStaticLoop();destroyHls();audio.pause();audio.removeAttribute('src');try{audio.load();}catch{};
-  playBtn.textContent='▶';liveBadge.hidden=true;progressWrap.hidden=true;progressFilled.style.width='0';
+  playBtn.innerHTML=ICON_PLAY;liveBadge.hidden=true;progressWrap.hidden=true;progressFilled.style.width='0';
   document.querySelectorAll('.station,.episode').forEach(el=>el.classList.remove('active'));
   mode=null;activeId=null;setSignal('off');
 };
@@ -192,7 +194,7 @@ const playHls=async url=>{
     hls=new Hls({enableWorker:true,maxBufferLength:30});
     hls.loadSource(url);hls.attachMedia(audio);
     hls.on(Hls.Events.MANIFEST_PARSED,()=>audio.play().catch(()=>{}));
-    hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal){nowSub.textContent='信号中断，请重试';playBtn.textContent='▶';setSignal('weak');}});
+    hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal){nowSub.textContent='信号中断，请重试';playBtn.innerHTML=ICON_PLAY;setSignal('weak');}});
     // 致命错误后不主动 destroy：用户重新点选该台会走 stopAll()->destroyHls() 统一清理
   } else nowSub.textContent='当前浏览器不支持此流';
 };
@@ -388,15 +390,15 @@ const loadDaily=async force=>{
 };
 
 /* ========== 12. <audio> 原生事件绑定 ========== */
-audio.addEventListener('play',()=>{playBtn.textContent='⏸';});
-audio.addEventListener('pause',()=>{playBtn.textContent='▶';});
+audio.addEventListener('play',()=>{playBtn.innerHTML=ICON_PAUSE;});
+audio.addEventListener('pause',()=>{playBtn.innerHTML=ICON_PLAY;});
 audio.addEventListener('timeupdate',()=>{
   if(mode!=='podcast'||!audio.duration)return; // 直播没有进度条，只有播客更新
   progressFilled.style.width=((audio.currentTime/audio.duration)*100)+'%';
   curTime.textContent=fmt(audio.currentTime);durTime.textContent=fmt(audio.duration);
 });
 audio.addEventListener('loadedmetadata',()=>{if(mode==='podcast')durTime.textContent=fmt(audio.duration);});
-audio.addEventListener('error',()=>{if(mode){nowSub.textContent='播放出错，请换台重试';setSignal('weak');}playBtn.textContent='▶';});
+audio.addEventListener('error',()=>{if(mode){nowSub.textContent='播放出错，请换台重试';setSignal('weak');}playBtn.innerHTML=ICON_PLAY;});
 progressBar.addEventListener('click',e=>{
   if(mode!=='podcast'||!audio.duration)return;
   const r=progressBar.getBoundingClientRect();
