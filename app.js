@@ -10,7 +10,8 @@
  *   7. 播放核心 — 启停、direct/HLS 播放、选台（含"调谐延迟"模拟）
  *   8. 预设列表渲染 + 分类筛选
  *   9. 折叠面板（电台 / 播客）
- *   10. 旋钮拖拽交互（鼠标 + 触屏）
+ *   10. 旋钮拖拽交互（表盘刻度：鼠标 + 触屏）
+ *   10b. 硬件旋钮（音量 / 调谐：Pointer Events 纵向拖拽）与电源开关
  *   11. 播客 RSS 拉取与解析（带 CORS 代理兜底）
  *   12. <audio> 原生事件绑定
  *   13. 预设步进（⏮️⏭️）与波段切换（🔄 FM/AM）
@@ -52,7 +53,7 @@ const STATIONS = [
 // 拨号旋钮的上一台/下一台走的是 sortedPresets()，会在当前波段内按频率单独排序。
 
 const DAILY = { name:'The Daily', feed:'https://feeds.simplecast.com/54nAGcIl' };
-const STORAGE_KEY = 'radio_state_v5'; // 存档结构变化时应递增版本号，避免读到旧格式出错
+const STORAGE_KEY = 'radio_state_v6'; // 存档结构变化时应递增版本号，避免读到旧格式出错
 const FM_MIN=88, FM_MAX=108, AM_MIN=530, AM_MAX=1700; // 表盘量程（MHz / kHz）
 const SNAP_FM=0.35, SNAP_AM=12; // 拖动旋钮松手时，频率落在预设 ±此范围内即自动吸附锁台
 
@@ -112,8 +113,15 @@ const bandLabel=document.getElementById('bandLabel');
 const dialNeedle=document.getElementById('dialNeedle');
 const dialMarks=document.getElementById('dialMarks');
 const dialTrack=document.getElementById('dialTrack');
-const dialLabels=document.getElementById('dialLabels');
+const fmScale=document.getElementById('fmScale');
+const amScale=document.getElementById('amScale');
 const signalBars=document.getElementById('signalBars');
+const radioEl=document.getElementById('radio');
+const powerBtn=document.getElementById('powerBtn');
+const powerLed=document.getElementById('powerLed');
+const volKnob=document.getElementById('volKnob');
+const tuneKnob=document.getElementById('tuneKnob');
+const volVal=document.getElementById('volVal');
 
 /* ========== 4. 状态变量 ========== */
 let hls=null;              // 当前 Hls.js 实例（direct 流或原生 HLS 支持时为 null）
@@ -124,9 +132,14 @@ let podOpen=false, stOpen=false; // 两个折叠面板的展开状态；实际�
 let tuneTimer=null;         // "调谐延迟"的 setTimeout 句柄，用于中途取消
 let dialBand='FM';          // 当前表盘波段
 let currentFreq=98;         // 表盘当前指向的频率
-let dragging=false;         // 是否正在拖动旋钮
+let dragging=false;         // 是否正在拖动表盘刻度
+let tuneKnobDrag=false;     // 是否正在拖动调谐旋钮
 let staticLoop=null;        // 拖动旋钮时循环播放的静电声源
 let filter='all';           // 当前预设筛选 tab
+let power=true;             // 电源开关状态（关机时表盘熄灯、按键失效）
+let volume=0.85;            // 音量 0..1，存档恢复
+let resumeStation=null;     // 上次收听的电台（仅恢复显示用，点播放键时真正开始播）
+let resumeEpisode=null;     // 上次收听的播客单集 {url,title}，同上
 
 // 表盘刻度线（41 根），纯装饰，与频率数值无绑定关系
 (()=>{const f=document.createDocumentFragment();for(let i=0;i<41;i++)f.appendChild(document.createElement('span'));dialMarks.appendChild(f);})();
@@ -152,11 +165,11 @@ const setDialUI=(freq,band,{animate=true,tuning=false}={})=>{
     if(!dragging) dialNeedle.classList.remove('dragging');
   }
 };
+// 双波段刻度常驻显示，只有点亮当前波段（像真机双波段收音机）
 const setDialScale=band=>{
   dialBand=band;
-  dialLabels.innerHTML=band==='AM'
-    ? '<span>530</span><span>770</span><span>1010</span><span>1250</span><span>1490</span><span>1700</span>'
-    : '<span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>';
+  fmScale.classList.toggle('active',band==='FM');
+  amScale.classList.toggle('active',band==='AM');
 };
 const setSignal=s=>{signalBars.classList.remove('on','weak');if(s==='on')signalBars.classList.add('on');else if(s==='weak')signalBars.classList.add('weak');};
 
@@ -202,6 +215,8 @@ const playHls=async url=>{
 // 选台：先给"调谐中…"的过渡反馈（模拟真实收音机对频延迟），tuneTimer 到时才真正切换音频源。
 // fromDial=true 表示由拖动旋钮松手触发，用更短的延迟 + 不叠加静电音效（拖动中已经在放静电声）。
 const playStation=async(st,{fromDial=false}={})=>{
+  if(!power) setPower(true); // 关机状态下点选电台：先开机再播放
+  resumeStation=null;resumeEpisode=null; // 本次已手动选台，清除"上次存档"的恢复入口
   stopAll();mode='live';activeId=st.id;
   setDialScale(st.band);setDialUI(st.freq,st.band,{tuning:true,animate:!fromDial});setSignal('weak');
   if(!fromDial) playTuneStatic(0.45);
@@ -227,6 +242,8 @@ const findSnapStation=(freq,band)=>{
 };
 
 const playEpisode=async ep=>{
+  if(!power) setPower(true); // 关机状态下点选播客：先开机再播放
+  resumeStation=null;resumeEpisode=null; // 本次已手动选集，清除"上次存档"的恢复入口
   stopAll();mode='podcast';activeId=ep.url;
   nowTitle.textContent=ep.title;nowSub.textContent=DAILY.name;
   liveBadge.hidden=true;progressWrap.hidden=false;
@@ -235,17 +252,25 @@ const playEpisode=async ep=>{
   await playDirect(ep.url);saveState({type:'podcast',url:ep.url,title:ep.title});
 };
 
-// 播放/暂停合一按钮的核心逻辑：没有任何音频源时不做任何事（避免暂停一个空 <audio>）
+// 播放/暂停合一按钮：
+//  - 有音频源 → 播放/暂停切换
+//  - 无音频源但有上次存档 → 从存档恢复播放（修复"记得上次但点播放没反应"）
+//  - 关机时不做任何事
 const togglePlay=()=>{
-  if(!audio.src&&!hls)return;
-  if(audio.paused){
-    audio.play().catch(err=>{
-      console.warn('播放失败:',err);
-      setSignal('off');
-    });
-  }else{
-    audio.pause();
+  if(!power)return;
+  if(audio.src||hls){
+    if(audio.paused){
+      audio.play().catch(err=>{
+        console.warn('播放失败:',err);
+        setSignal('off');
+      });
+    }else{
+      audio.pause();
+    }
+    return;
   }
+  if(resumeStation){const st=resumeStation;resumeStation=null;resumeEpisode=null;playClickSound();playStation(st);}
+  else if(resumeEpisode){const ep=resumeEpisode;resumeStation=null;resumeEpisode=null;playClickSound();playEpisode(ep);}
 };
 
 /* ========== 8. 预设列表渲染 + 分类筛选 ========== */
@@ -322,7 +347,8 @@ const onDialMove=e=>{
 const onDialUp=()=>{
   if(!dragging)return;dragging=false;dialNeedle.classList.remove('dragging');stopStaticLoop();freqDisplay.classList.remove('tuning');
   const snap=findSnapStation(currentFreq,dialBand);
-  if(snap) playStation(snap,{fromDial:true});
+  if(snap&&power)playStation(snap,{fromDial:true});
+  else if(!power){nowTitle.textContent='已关机';nowSub.textContent='按电源键开机';setSignal('off');}
   else{nowTitle.textContent='未锁台';nowSub.textContent='靠近预设再松手，或点下方列表';setSignal('off');setDialUI(currentFreq,dialBand,{animate:true});}
 };
 dialTrack.addEventListener('mousedown',onDialDown);
@@ -333,6 +359,101 @@ window.addEventListener('mousemove',onDialMove);
 window.addEventListener('touchmove',onDialMove,{passive:true});
 window.addEventListener('mouseup',onDialUp);
 window.addEventListener('touchend',onDialUp);
+
+/* ========== 10b. 硬件旋钮（音量 / 调谐）与电源开关 ========== */
+// 旋钮旋转角度：-135°..135° 对应值域两端（纯视觉反馈）
+const setKnobRot=(el,pct)=>{el.style.setProperty('--rot',(-135+pct*270)+'deg');};
+
+// 电源：关机 = 停播 + 表盘熄灯 + 除电源外按键失效；开机回到待机显示
+function setPower(on){
+  power=on;
+  radioEl.classList.toggle('power-off',!on);
+  powerLed.classList.toggle('on',on);
+  if(!on){
+    stopAll();setSignal('off');
+    nowTitle.textContent='已关机';nowSub.textContent='按电源键开机';
+  }else{
+    nowTitle.textContent='未选台';nowSub.textContent='旋转调谐钮或点下方列表选台';
+  }
+}
+powerBtn.addEventListener('click',()=>{playClickSound();setPower(!power);});
+
+// 音量 0..1：作用于 <audio>.volume，百分比显示在旋钮下方，松手后存档
+const setVolume=(v,{save=true}={})=>{
+  volume=Math.max(0,Math.min(1,v));
+  audio.volume=volume;
+  const pct=Math.round(volume*100);
+  volVal.textContent=pct;volKnob.setAttribute('aria-valuenow',pct);
+  setKnobRot(volKnob,volume);
+  if(save)saveState({vol:pct});
+};
+const bumpVolume=d=>setVolume(Math.round((volume+d)*20)/20); // 键盘步进：每次 5%
+let volDrag=false,volStartY=0,volStartV=0;
+volKnob.addEventListener('pointerdown',e=>{
+  e.preventDefault();volDrag=true;volStartY=e.clientY;volStartV=volume;
+  try{volKnob.setPointerCapture(e.pointerId);}catch{}
+});
+volKnob.addEventListener('pointermove',e=>{
+  if(!volDrag)return;
+  setVolume(volStartV+(volStartY-e.clientY)/120,{save:false}); // 拖动中不写存档，松手再存
+});
+const volEnd=()=>{if(!volDrag)return;volDrag=false;saveState({vol:Math.round(volume*100)});};
+volKnob.addEventListener('pointerup',volEnd);
+volKnob.addEventListener('pointercancel',volEnd);
+volKnob.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'||e.key==='ArrowRight'){e.preventDefault();bumpVolume(0.05);}
+  else if(e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();bumpVolume(-0.05);}
+});
+
+// 调谐旋钮：纵向拖拽，按波段量程换算频率；松手走同一套吸附锁台逻辑。
+// 关机时只动指针（纯机械手感），不自动开机（选台列表/预设键才会自动开机）。
+let knobStartY=0,knobStartFreq=0;
+const tuneKnobDown=e=>{
+  e.preventDefault();tuneKnobDrag=true;knobStartY=e.clientY;knobStartFreq=currentFreq;
+  stopAll();startStaticLoop();setSignal('weak');freqDisplay.classList.add('tuning');
+  nowTitle.textContent=power?'调谐中…':'已关机';nowSub.textContent=power?'松开以锁台':'按电源键开机';
+  liveBadge.hidden=true;progressWrap.hidden=true;
+  try{tuneKnob.setPointerCapture(e.pointerId);}catch{}
+};
+const tuneKnobMove=e=>{
+  if(!tuneKnobDrag)return;
+  const min=dialBand==='AM'?AM_MIN:FM_MIN,max=dialBand==='AM'?AM_MAX:FM_MAX;
+  const range=max-min;
+  const f=Math.max(min,Math.min(max,knobStartFreq+(knobStartY-e.clientY)/140*range));
+  setDialUI(f,dialBand,{animate:false,tuning:true});
+  setKnobRot(tuneKnob,freqToPercent(f,dialBand)/100);
+  const near=findSnapStation(f,dialBand);
+  nowSub.textContent=power?(near?('接近 '+near.name):'静电 · 无预设'):'按电源键开机';
+  setSignal(near?'weak':'off');
+};
+const tuneKnobUp=()=>{
+  if(!tuneKnobDrag)return;tuneKnobDrag=false;stopStaticLoop();freqDisplay.classList.remove('tuning');
+  setKnobRot(tuneKnob,freqToPercent(currentFreq,dialBand)/100);
+  const snap=findSnapStation(currentFreq,dialBand);
+  if(snap&&power)playStation(snap,{fromDial:true});
+  else if(!power){nowTitle.textContent='已关机';nowSub.textContent='按电源键开机';setSignal('off');}
+  else{nowTitle.textContent='未锁台';nowSub.textContent='靠近预设再松手，或点下方列表';setSignal('off');setDialUI(currentFreq,dialBand,{animate:true});}
+};
+tuneKnob.addEventListener('pointerdown',tuneKnobDown);
+tuneKnob.addEventListener('pointermove',tuneKnobMove);
+tuneKnob.addEventListener('pointerup',tuneKnobUp);
+tuneKnob.addEventListener('pointercancel',tuneKnobUp);
+// 键盘微调（旋钮聚焦时）：步进频率，命中吸附阈值即锁台
+const nudgeTune=dir=>{
+  if(!power)return;
+  const step=dialBand==='AM'?10:0.2;
+  const min=dialBand==='AM'?AM_MIN:FM_MIN,max=dialBand==='AM'?AM_MAX:FM_MAX;
+  stopAll();
+  const f=Math.max(min,Math.min(max,currentFreq+dir*step));
+  setDialUI(f,dialBand,{animate:true});setKnobRot(tuneKnob,freqToPercent(f,dialBand)/100);
+  const snap=findSnapStation(f,dialBand);
+  if(snap)playStation(snap,{fromDial:true});
+  else{nowTitle.textContent='调谐中…';nowSub.textContent='静电 · 无预设';setSignal('off');}
+};
+tuneKnob.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp'||e.key==='ArrowRight'){e.preventDefault();nudgeTune(1);}
+  else if(e.key==='ArrowDown'||e.key==='ArrowLeft'){e.preventDefault();nudgeTune(-1);}
+});
 
 /* ========== 11. 播客 RSS 拉取与解析 ========== */
 const parseRss=xml=>{
@@ -455,7 +576,12 @@ bandBtn.addEventListener('click', toggleBand);
 playBtn.addEventListener('click',()=>{playClickSound();togglePlay();});
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.target===volKnob||e.target===tuneKnob)return; // 旋钮聚焦时方向键由旋钮自身处理，避免双重步进
   if(e.key===' '||e.key==='k'||e.key==='K'){e.preventDefault();playClickSound();togglePlay();}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepPreset(1);}
+  else if(e.key==='ArrowLeft'){e.preventDefault();stepPreset(-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();playClickSound();bumpVolume(0.05);}
+  else if(e.key==='ArrowDown'){e.preventDefault();bumpVolume(-0.05);}
 });
 
 /* ========== 15. 时钟 ========== */
@@ -468,6 +594,7 @@ tick();setInterval(tick,1000);
   const last=loadState();
   setStOpen(last.stOpen===true);   // 默认收起，只有上次手动展开过才恢复展开
   setPodOpen(!!last.podOpen);
+  setVolume(typeof last.vol==='number'?last.vol/100:0.85,{save:false}); // 恢复音量，不回写存档
 
   if(last.type==='live'&&last.id){
     const st=STATIONS.find(s=>s.id===last.id);
@@ -475,6 +602,7 @@ tick();setInterval(tick,1000);
       // 对应的 .station 按钮已在 renderStations() 里根据同一份存档标记过 active，这里无需重复操作
       nowTitle.textContent=st.name;nowSub.textContent='点击播放继续收听';
       setDialScale(st.band);setDialUI(st.freq,st.band,{animate:false});setSignal('weak');
+      resumeStation=st; // 只恢复显示，不自动出声；用户点播放键时 togglePlay() 会用它真正开始播
       return; // 表盘已定位到目标电台，不再需要下面的默认 FM/98 复位
     }
   }
@@ -486,5 +614,8 @@ tick();setInterval(tick,1000);
   if(last.type==='podcast'&&last.title){
     nowTitle.textContent=last.title;nowSub.textContent=DAILY.name+' · 展开后可继续收听';
     bandLabel.textContent='POD';freqDisplay.textContent='—';
+    if(last.url)resumeEpisode={url:last.url,title:last.title}; // 点播放键时恢复播出
   }
+
+  setKnobRot(tuneKnob,freqToPercent(currentFreq,dialBand)/100); // 调谐旋钮指向与表盘一致
 })();

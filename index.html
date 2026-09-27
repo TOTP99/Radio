@@ -3,43 +3,96 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#05070b" />
+  <meta name="theme-color" content="#171008" />
   <title>收音机 · Radio</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- 顶部品牌栏 + 实时时钟（app.js 里的 tick()） -->
-  <header class="brand">
-    <span>TP制作🐈📻</span>
-    <span class="clock" id="clock">--:--:--</span>
-  </header>
 
-  <!-- 主播放卡片：表盘 + 当前播放信息 + 播客进度条 + 控制按钮 -->
-  <main class="player-card">
-    <span class="corner-bl" aria-hidden="true"></span>
-    <span class="corner-br" aria-hidden="true"></span>
-    <div class="radio-face">
-      <div class="freq-row">
+  <!-- ══════════ 收音机机身 ══════════ -->
+  <main class="radio" id="radio">
+    <span class="screw tl" aria-hidden="true"></span>
+    <span class="screw tr" aria-hidden="true"></span>
+    <span class="screw bl" aria-hidden="true"></span>
+    <span class="screw br" aria-hidden="true"></span>
+
+    <!-- 品牌铭牌 + 时钟 -->
+    <div class="brand-row">
+      <div class="brand-plate">TP&nbsp;RADIO</div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+
+    <!-- 横屏时左右并列：左栏=表盘，右栏=网罩+旋钮+按键+播放信息（竖屏时仍上下堆叠，顺序不变） -->
+    <div class="radio-cols">
+      <div class="radio-col-main">
+    <!-- 表盘玻璃：FM/AM 双刻度 + 指针 + 数字读数 + 信号格 -->
+    <div class="dial-glass" id="dialGlass">
+      <div class="band-scale fm-scale active" id="fmScale" aria-hidden="true">
+        <span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>
+      </div>
+      <div class="dial-track" id="dialTrack">
+        <div class="dial-marks" id="dialMarks"></div>
+        <div class="dial-needle" id="dialNeedle"></div>
+      </div>
+      <div class="band-scale am-scale" id="amScale" aria-hidden="true">
+        <span>530</span><span>770</span><span>1010</span><span>1250</span><span>1490</span><span>1700</span>
+      </div>
+      <div class="dial-readout">
         <span class="band" id="bandLabel">FM</span>
         <div class="freq-display" id="freqDisplay">--.-</div>
         <div class="signal" id="signalBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       </div>
-      <div class="dial">
-        <div class="dial-track" id="dialTrack">
-          <div class="dial-marks" id="dialMarks"></div>
-          <div class="dial-needle" id="dialNeedle"></div>
-        </div>
-        <div class="dial-labels" id="dialLabels">
-          <span>88</span><span>92</span><span>96</span><span>100</span><span>104</span><span>108</span>
-        </div>
-      </div>
-      <div class="tune-hint">拖动刻度调台 · 上一/下一切预设 · 切FM/AM</div>
     </div>
+      </div><!-- /radio-col-main -->
+      <div class="radio-col-side">
+
+    <!-- 喇叭网罩 + 两个旋钮：音量 / 调谐 -->
+    <div class="deck-row">
+      <div class="grille" aria-hidden="true"><span class="grille-badge">STEREO</span></div>
+      <div class="knob-unit">
+        <div class="knob" id="volKnob" role="slider" tabindex="0" aria-label="音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="85">
+          <span class="knob-pointer"></span>
+        </div>
+        <div class="knob-caption">音量 <b id="volVal">85</b></div>
+      </div>
+      <div class="knob-unit">
+        <div class="knob" id="tuneKnob" role="slider" tabindex="0" aria-label="调谐">
+          <span class="knob-pointer"></span>
+        </div>
+        <div class="knob-caption">调谐</div>
+      </div>
+    </div>
+
+    <!-- 硬件按键：电源 / 波段 / 上一台 / 播放暂停 / 下一台 -->
+    <div class="btn-row">
+      <div class="power-unit">
+        <span class="led on" id="powerLed" aria-hidden="true"></span>
+        <button type="button" class="hw-btn" id="powerBtn" title="电源" aria-label="电源">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 3v8"/><path d="M6.2 6.5a8 8 0 1 0 11.6 0"/>
+          </svg>
+        </button>
+      </div>
+      <button type="button" class="hw-btn wide" id="bandBtn" title="FM/AM 切换" aria-label="FM/AM 切换">FM·AM</button>
+      <button type="button" class="hw-btn" id="prevBtn" title="上一预设" aria-label="上一预设">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button type="button" class="hw-btn primary" id="playBtn" title="播放/暂停" aria-label="播放/暂停">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button type="button" class="hw-btn" id="nextBtn" title="下一预设" aria-label="下一预设">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+    </div>
+
+    <!-- 当前播放信息 -->
     <div class="visual">
       <div class="live-badge" id="liveBadge" hidden>LIVE</div>
       <div class="now-title" id="nowTitle">选择电台或播客</div>
-      <div class="now-sub" id="nowSub">预设筛选 · 旋钮调谐 · The Daily</div>
+      <div class="now-sub" id="nowSub">旋转调谐钮或点下方列表选台</div>
     </div>
+
+    <!-- 播客进度条（仅播客模式显示） -->
     <div class="progress-wrap" id="progressWrap" hidden>
       <div class="progress-bar" id="progressBar">
         <div class="progress-filled" id="progressFilled"></div>
@@ -49,22 +102,13 @@
         <span id="durTime">0:00</span>
       </div>
     </div>
-    <!-- 单行四按钮：切FM/AM · 播放/暂停（合并了原来的⏹停止）· 切预设 -->
-    <div class="controls">
-      <button type="button" id="bandBtn" title="FM/AM 切换" aria-label="FM/AM 切换">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <polyline points="1 20 1 14 7 14"></polyline>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-      </button>
-      <button type="button" id="playBtn" class="play" title="播放/暂停" aria-label="播放/暂停"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-      <button type="button" id="prevBtn" title="上一预设" aria-label="上一预设"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
-      <button type="button" id="nextBtn" title="下一预设" aria-label="下一预设"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-    </div>
+      </div><!-- /radio-col-side -->
+    </div><!-- /radio-cols -->
+
+    <div class="tune-hint">上下拖动旋钮调谐 / 调音量 · 拖动表盘刻度也可调台 · ←/→ 切台 · ↑/↓ 音量</div>
   </main>
 
-  <!-- 直播电台：默认收起（见 app.js 里 setStOpen 的初始化逻辑），展开后显示分类筛选 + 预设网格 -->
+  <!-- 直播电台：默认收起，展开后显示分类筛选 + 预设网格 -->
   <section class="section station-section">
     <button type="button" class="pod-toggle" id="stToggle" aria-expanded="false">
       <span class="pod-toggle-left">
@@ -86,7 +130,7 @@
     </div>
   </section>
 
-  <!-- 播客：The Daily，首次展开时才通过 RSS 拉取节目单（app.js 里的 loadDaily） -->
+  <!-- 播客：The Daily，首次展开时才通过 RSS 拉取节目单 -->
   <section class="section podcast-section">
     <button type="button" class="pod-toggle" id="podToggle" aria-expanded="false">
       <span class="pod-toggle-left">

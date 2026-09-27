@@ -1,124 +1,261 @@
+/* ══════════ 收音机 · 仿真机身 ══════════ */
 :root {
-  --bg: #05070b; --surface: #0a0e14; --card: #0e141c; --card-hover: #141c28;
+  --bg: #0b0906; --surface: #0a0e14; --card: #0e141c; --card-hover: #141c28;
   --border: rgba(218, 175, 80, 0.28); --border-strong: rgba(232, 197, 106, 0.5);
   --text: #e8eef6; --muted: #7a8fa8; --accent: #5ba8d9;
   --gold: #daaf50; --gold-bright: #e8c56a; --live: #e85a5a; --radius: 6px;
-  --lcd: #c8f0a0; --lcd-dim: rgba(200, 240, 160, 0.25);
+  --amber: #ffb648; --amber-glow: rgba(255, 182, 72, 0.55);
+  --wood-1: #2b2013; --wood-2: #1c140c; --wood-3: #120d07;
+  --glass: #05080d;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", Helvetica, Arial, sans-serif;
-  background: var(--bg); color: var(--text); min-height: 100dvh;
+  background: radial-gradient(120% 90% at 50% 0%, #14100a 0%, var(--bg) 55%);
+  color: var(--text); min-height: 100dvh;
   padding: 16px 14px 40px; max-width: 520px; margin: 0 auto;
   -webkit-font-smoothing: antialiased;
 }
-.brand {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em;
-  color: var(--gold); margin-bottom: 16px;
-}
-.clock { font-variant-numeric: tabular-nums; color: var(--gold-bright); }
-.player-card {
+
+/* ── 机身：深胡桃木质感 + 金色描边 ── */
+.radio {
   position: relative;
-  background: linear-gradient(165deg, var(--surface) 0%, #070b10 100%);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 16px 16px; margin-bottom: 20px;
-  box-shadow: 0 0 0 1px rgba(232, 197, 106, 0.06); overflow: hidden;
+  background:
+    repeating-linear-gradient(93deg, rgba(255,255,255,0.014) 0 3px, transparent 3px 7px),
+    linear-gradient(165deg, var(--wood-1) 0%, var(--wood-2) 55%, var(--wood-3) 100%);
+  border: 1px solid #4a3a24; border-radius: 20px;
+  padding: 20px 16px 14px; margin-bottom: 20px;
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.65),
+    inset 0 1px 0 rgba(255, 224, 160, 0.16),
+    inset 0 -2px 6px rgba(0,0,0,0.5);
 }
-.player-card::before, .player-card::after {
-  content: ''; position: absolute; width: 14px; height: 14px;
-  pointer-events: none; z-index: 1; opacity: 0.7;
+.radio::before {
+  content: ''; position: absolute; inset: 6px; border-radius: 14px;
+  border: 1px solid rgba(232, 197, 106, 0.22); pointer-events: none;
 }
-.player-card::before {
-  top: 5px; left: 5px;
-  border-top: 1.5px solid var(--gold-bright); border-left: 1.5px solid var(--gold-bright);
+/* 四角机身螺丝 */
+.screw {
+  position: absolute; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c9b48a 0%, #6e5c3a 45%, #241b0e 100%);
+  box-shadow: inset 0 -1px 2px rgba(0,0,0,0.7), 0 1px 1px rgba(0,0,0,0.5);
+  z-index: 2;
 }
-.player-card::after {
-  top: 5px; right: 5px;
-  border-top: 1.5px solid var(--gold-bright); border-right: 1.5px solid var(--gold-bright);
+.screw::after {
+  content: ''; position: absolute; left: 1px; right: 1px; top: 50%; height: 1.2px;
+  margin-top: -0.6px; background: rgba(20,12,4,0.85); transform: rotate(38deg);
 }
-.player-card .corner-bl, .player-card .corner-br {
-  position: absolute; width: 14px; height: 14px; pointer-events: none; z-index: 1; opacity: 0.7;
+.screw.tl { top: 11px; left: 11px; } .screw.tr { top: 11px; right: 11px; }
+.screw.bl { bottom: 11px; left: 11px; } .screw.br { bottom: 11px; right: 11px; }
+
+/* ── 品牌铭牌 + 时钟 ── */
+.brand-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 2px 2px 12px;
 }
-.player-card .corner-bl {
-  bottom: 5px; left: 5px;
-  border-bottom: 1.5px solid var(--gold-bright); border-left: 1.5px solid var(--gold-bright);
+.brand-plate {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.32em; text-indent: 0.32em;
+  color: #2a1f0e;
+  background: linear-gradient(180deg, #f0d48a 0%, #c79a3f 50%, #a87c26 100%);
+  padding: 5px 12px 5px 14px; border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.5);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
 }
-.player-card .corner-br {
-  bottom: 5px; right: 5px;
-  border-bottom: 1.5px solid var(--gold-bright); border-right: 1.5px solid var(--gold-bright);
+.clock {
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em;
+  color: var(--amber); font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px var(--amber-glow);
 }
-.radio-face {
-  margin-bottom: 14px; padding: 12px 12px 10px;
-  background: linear-gradient(180deg, #0c121a 0%, #080c12 100%);
-  border: 1px solid rgba(232, 197, 106, 0.2); border-radius: 4px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+
+/* ── 表盘玻璃 ── */
+.dial-glass {
+  position: relative;
+  background: linear-gradient(180deg, #0a1018 0%, var(--glass) 60%, #04070b 100%);
+  border: 1px solid rgba(0,0,0,0.9); border-radius: 10px;
+  padding: 10px 12px 8px; margin-bottom: 14px;
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 197, 106, 0.25),
+    inset 0 0 34px rgba(255, 182, 72, 0.10),
+    0 2px 8px rgba(0,0,0,0.6);
+  overflow: hidden;
 }
-.freq-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-bottom: 10px;
+/* 玻璃反光 */
+.dial-glass::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.055) 42%, transparent 55%);
 }
-.band {
-  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; color: var(--gold);
-  border: 1px solid rgba(232, 197, 106, 0.35); padding: 3px 7px; border-radius: 2px;
-  min-width: 36px; text-align: center;
+.band-scale {
+  display: flex; justify-content: space-between; padding: 0 2px;
+  font-size: 0.6rem; font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  color: #4d5a6e; transition: color 0.3s, text-shadow 0.3s;
 }
-.freq-display {
-  flex: 1; text-align: center;
-  font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
-  font-size: 1.85rem; font-weight: 600; letter-spacing: 0.06em;
-  color: var(--lcd); text-shadow: 0 0 12px rgba(200, 240, 160, 0.35);
-  font-variant-numeric: tabular-nums; line-height: 1;
-}
-.freq-display.tuning { animation: flicker 0.12s steps(2) infinite; }
-@keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.signal { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
-.signal i { display: block; width: 3px; background: var(--lcd-dim); border-radius: 1px; }
-.signal i:nth-child(1) { height: 4px; } .signal i:nth-child(2) { height: 7px; }
-.signal i:nth-child(3) { height: 10px; } .signal i:nth-child(4) { height: 13px; }
-.signal i:nth-child(5) { height: 16px; }
-.signal.on i { background: var(--lcd); }
-.signal.on i:nth-child(n+4) { background: var(--gold-bright); }
-.signal.weak i:nth-child(n+3) { background: var(--lcd-dim); }
-.signal.weak i:nth-child(-n+2) { background: var(--lcd); }
-.dial { position: relative; }
+.band-scale.active { color: var(--amber); text-shadow: 0 0 8px var(--amber-glow); font-weight: 600; }
+.fm-scale { margin-bottom: 5px; }
+.am-scale { margin-top: 5px; }
 .dial-track {
-  position: relative; height: 28px;
-  background: linear-gradient(180deg, #06090e, #0a1018);
-  border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;
+  position: relative; height: 30px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(10,16,24,0.35));
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   overflow: hidden; cursor: grab; touch-action: none; user-select: none;
+  -webkit-user-select: none;
 }
 .dial-track:active { cursor: grabbing; }
 .dial-marks {
   position: absolute; inset: 0; display: flex; align-items: flex-end;
-  padding: 0 2px 4px; pointer-events: none;
+  padding: 0 2px 5px; pointer-events: none;
 }
-.dial-marks span { flex: 1; height: 6px; border-left: 1px solid rgba(232, 197, 106, 0.2); }
-.dial-marks span:nth-child(5n+1) { height: 12px; border-left-color: rgba(232, 197, 106, 0.42); }
+.dial-marks span { flex: 1; height: 6px; border-left: 1px solid rgba(255,182,72,0.22); }
+.dial-marks span:nth-child(5n+1) { height: 13px; border-left-color: rgba(255,182,72,0.5); }
 .dial-needle {
-  position: absolute; top: 2px; bottom: 2px; width: 2px; left: 0%;
-  background: linear-gradient(180deg, #fff, var(--gold-bright));
-  box-shadow: 0 0 6px rgba(232, 197, 106, 0.7); border-radius: 1px;
+  position: absolute; top: 1px; bottom: 1px; width: 2px; left: 0%;
+  background: linear-gradient(180deg, #ffe9b0, var(--amber));
+  box-shadow: 0 0 8px var(--amber-glow); border-radius: 1px;
   transition: left 0.35s cubic-bezier(0.22, 0.9, 0.3, 1); z-index: 2; pointer-events: none;
 }
 .dial-needle.dragging { transition: none; }
 .dial-needle::before {
   content: ''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
-  width: 6px; height: 6px; background: var(--gold-bright); border-radius: 50%;
-  box-shadow: 0 0 4px rgba(232, 197, 106, 0.8);
+  width: 7px; height: 7px; background: var(--amber); border-radius: 50%;
+  box-shadow: 0 0 6px var(--amber-glow);
 }
-.dial-labels {
-  display: flex; justify-content: space-between; margin-top: 4px;
-  font-size: 0.58rem; color: var(--muted); font-variant-numeric: tabular-nums; padding: 0 1px;
+/* 表盘读数行 */
+.dial-readout {
+  display: flex; align-items: center; gap: 10px; margin-top: 8px;
 }
-.tune-hint {
-  margin-top: 8px; font-size: 0.62rem; color: var(--muted);
-  text-align: center; letter-spacing: 0.04em;
+.band {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; color: #2a1f0e;
+  background: linear-gradient(180deg, #f0d48a, #c79a3f);
+  padding: 3px 8px; border-radius: 2px; min-width: 40px; text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
+.freq-display {
+  flex: 1; text-align: center;
+  font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 1.7rem; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--amber); text-shadow: 0 0 14px var(--amber-glow);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.freq-display.tuning { animation: flicker 0.12s steps(2) infinite; }
+@keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.signal { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.signal i { display: block; width: 3px; background: rgba(255,182,72,0.18); border-radius: 1px; }
+.signal i:nth-child(1) { height: 4px; } .signal i:nth-child(2) { height: 7px; }
+.signal i:nth-child(3) { height: 10px; } .signal i:nth-child(4) { height: 13px; }
+.signal i:nth-child(5) { height: 16px; }
+.signal.on i { background: var(--amber); box-shadow: 0 0 4px var(--amber-glow); }
+.signal.weak i:nth-child(-n+2) { background: var(--amber); }
+.signal.weak i:nth-child(n+3) { background: rgba(255,182,72,0.18); box-shadow: none; }
+/* 关机：表盘熄灯 */
+.radio.power-off .dial-glass { box-shadow: inset 0 0 0 1px rgba(232,197,106,0.12), 0 2px 8px rgba(0,0,0,0.6); }
+.radio.power-off .band-scale.active { color: #4d5a6e; text-shadow: none; }
+.radio.power-off .freq-display { color: #3d4a5e; text-shadow: none; }
+.radio.power-off .dial-needle { background: #5a6678; box-shadow: none; }
+.radio.power-off .dial-needle::before { background: #5a6678; box-shadow: none; }
+.radio.power-off .signal i { background: rgba(255,182,72,0.10) !important; box-shadow: none !important; }
+.radio.power-off .band { filter: grayscale(0.7) brightness(0.75); }
+.radio.power-off .clock { color: #4d5a6e; text-shadow: none; }
+
+/* ── 喇叭网罩 + 旋钮 ── */
+.deck-row { display: flex; align-items: stretch; gap: 12px; margin-bottom: 14px; }
+.grille {
+  position: relative; flex: 1; min-height: 96px; border-radius: 10px;
+  background:
+    radial-gradient(circle, rgba(0,0,0,0.85) 1.4px, transparent 1.6px),
+    linear-gradient(180deg, #191309 0%, #0e0a05 100%);
+  background-size: 9px 9px, 100% 100%;
+  border: 1px solid rgba(0,0,0,0.9);
+  box-shadow: inset 0 0 0 1px rgba(232,197,106,0.14), inset 0 4px 14px rgba(0,0,0,0.7);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 7px;
+}
+.grille-badge {
+  font-size: 0.56rem; font-weight: 700; letter-spacing: 0.3em; text-indent: 0.3em;
+  color: rgba(232, 197, 106, 0.5);
+}
+.knob-unit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.knob {
+  --rot: 0deg;
+  position: relative; width: 64px; height: 64px; border-radius: 50%;
+  cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none;
+  background:
+    radial-gradient(circle at 34% 28%, #4d4232 0%, #2b241a 42%, #14100a 100%);
+  border: 1px solid #000;
+  box-shadow:
+    0 4px 10px rgba(0,0,0,0.65),
+    inset 0 1px 2px rgba(255, 230, 170, 0.28),
+    inset 0 -3px 6px rgba(0,0,0,0.55);
+  transform: rotate(var(--rot));
+}
+.knob::before { /* 防滑滚花 */
+  content: ''; position: absolute; inset: 5px; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255,235,190,0.10) 0 6deg, transparent 6deg 12deg);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 59%);
+  mask: radial-gradient(circle, transparent 58%, #000 59%);
+}
+.knob::after {
+  content: ''; position: absolute; inset: 16px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #5a4c36 0%, #241c11 70%);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.7);
+}
+.knob-pointer {
+  position: absolute; left: 50%; top: 4px; width: 3px; height: 14px; margin-left: -1.5px;
+  background: var(--amber); border-radius: 2px; z-index: 2;
+  box-shadow: 0 0 5px var(--amber-glow);
+}
+.knob:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+.knob-caption {
+  font-size: 0.62rem; letter-spacing: 0.14em; color: var(--gold);
+  display: flex; gap: 4px; align-items: baseline;
+}
+.knob-caption b { color: var(--amber); font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ── 硬件按键 ── */
+.btn-row { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin-bottom: 12px; }
+.power-unit { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.led {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #3a2c1a; box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.led.on { background: #7dff9a; box-shadow: 0 0 8px rgba(125, 255, 154, 0.9); }
+.hw-btn {
+  min-width: 52px; height: 46px; padding: 0 10px;
+  border: 1px solid #0a0703; border-radius: 10px;
+  background: linear-gradient(180deg, #4a3d28 0%, #2c2314 55%, #1a140b 100%);
+  color: #f0d9a0; font-family: inherit; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255, 232, 175, 0.35),
+    inset 0 -2px 4px rgba(0,0,0,0.45);
+  transition: transform 0.06s, box-shadow 0.06s, filter 0.15s;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+}
+.hw-btn svg { width: 20px; height: 20px; display: block; }
+.hw-btn.wide { min-width: 64px; }
+.hw-btn.primary {
+  min-width: 60px; height: 52px;
+  background: linear-gradient(180deg, #f0d48a 0%, #c79a3f 55%, #9a6f22 100%);
+  color: #2a1f0e; text-shadow: 0 1px 0 rgba(255,240,200,0.5);
+}
+.hw-btn:hover { filter: brightness(1.12); }
+.hw-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.6),
+    inset 0 2px 5px rgba(0,0,0,0.5);
+}
+/* 关机时除电源外按键失效 */
+.radio.power-off .hw-btn:not(#powerBtn) { opacity: 0.35; pointer-events: none; }
+
+/* ── 当前播放信息 ── */
 .visual {
   text-align: center; min-height: 52px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px; margin-bottom: 12px;
+  align-items: center; justify-content: center; gap: 4px; margin-bottom: 10px;
+  background: rgba(0,0,0,0.28); border-radius: 8px; padding: 8px 10px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
 }
 .live-badge {
   font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; color: #fff;
@@ -128,7 +265,11 @@ body {
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 .now-title { font-size: 1.02rem; font-weight: 600; }
 .now-sub { font-size: 0.72rem; color: var(--muted); }
-.progress-wrap { margin-bottom: 12px; }
+.radio.power-off .now-title { color: #4d5a6e; }
+.radio.power-off .now-sub { color: #3d4756; }
+
+/* ── 播客进度条 ── */
+.progress-wrap { margin-bottom: 10px; }
 .progress-bar {
   height: 4px; background: rgba(255, 255, 255, 0.07); border-radius: 2px;
   cursor: pointer; position: relative; margin: 6px 0;
@@ -143,25 +284,15 @@ body {
   display: flex; justify-content: space-between; font-size: 0.66rem;
   color: var(--muted); font-variant-numeric: tabular-nums;
 }
-.controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
-.controls button {
-  min-width: 44px; min-height: 44px; border: none; outline: none; border-radius: 50%;
-  background: transparent; color: var(--text); font-size: 1.25rem; cursor: pointer;
-  transition: color 0.15s, transform 0.1s, box-shadow 0.15s, filter 0.15s;
-  display: inline-flex; align-items: center; justify-content: center;
+.tune-hint {
+  font-size: 0.62rem; color: #6b5a38; text-align: center; letter-spacing: 0.04em;
+  padding-bottom: 2px;
 }
-.controls button svg { width: 1em; height: 1em; display: block; }
-.controls button:hover { color: var(--gold-bright); }
-.controls .play { color: var(--gold); font-size: 1.45rem; min-width: 56px; min-height: 56px; }
-.controls button:active {
-  transform: scale(0.9); filter: brightness(1.3);
-  box-shadow: 0 0 18px 6px rgba(232, 197, 106, 0.55), 0 0 8px 2px rgba(232, 197, 106, 0.35);
-}
+
+/* ── 下方列表区（沿用原有设计） ── */
 .section { margin-bottom: 22px; }
 .hint { font-size: 0.7rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
-.filter-row {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
-}
+.filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .chip {
   font-family: inherit; font-size: 0.68rem; letter-spacing: 0.04em;
   padding: 5px 10px; border-radius: 999px; cursor: pointer;
@@ -239,4 +370,46 @@ body {
 .episode .ep-meta { font-size: 0.66rem; color: var(--muted); margin-top: 3px; }
 .loading, .error {
   text-align: center; color: var(--muted); font-size: 0.78rem; padding: 16px;
+}
+
+/* 窄屏微调 */
+@media (max-width: 380px) {
+  .knob { width: 56px; height: 56px; }
+  .hw-btn { min-width: 46px; }
+  .hw-btn.wide { min-width: 56px; }
+}
+
+/* ── 横屏（按 iPhone 14 844×390）：竖屏上下堆叠 → 横屏左右并列，四边留呼吸 ── */
+@media (orientation: landscape) and (min-width: 700px) {
+  body {
+    max-width: 900px; padding: 12px 18px 32px;
+    display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px;
+  }
+  .radio { grid-column: 1 / -1; margin-bottom: 16px; }
+  .station-section { grid-column: 1; }
+  .podcast-section { grid-column: 2; }
+  .section { margin-bottom: 0; }
+
+  /* 机身内部：左=表盘，右=网罩+旋钮+按键+播放信息 */
+  .radio-cols {
+    display: grid; grid-template-columns: 1.25fr 1fr;
+    gap: 20px; align-items: stretch;
+  }
+  .radio-col-main { display: flex; flex-direction: column; min-width: 0; }
+  .dial-glass {
+    flex: 1; margin-bottom: 0; padding: 14px 16px 12px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .freq-display { font-size: 2rem; }
+  .radio-col-side {
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 12px; min-width: 0;
+  }
+  .deck-row { margin-bottom: 0; }
+  .grille { min-height: 104px; }
+  .knob { width: 72px; height: 72px; }
+  .btn-row { margin-bottom: 0; flex-wrap: wrap; }
+  .visual { margin-bottom: 0; }
+  .progress-wrap { margin-bottom: 0; }
+  .tune-hint { margin-top: 12px; }
 }
